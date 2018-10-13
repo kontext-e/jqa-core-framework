@@ -1,12 +1,13 @@
 package com.buschmais.jqassistant.core.report;
 
-import java.io.StringWriter;
+import java.io.File;
 import java.util.*;
 
 import com.buschmais.jqassistant.core.analysis.api.Result;
 import com.buschmais.jqassistant.core.analysis.api.rule.*;
 import com.buschmais.jqassistant.core.report.api.ReportException;
-import com.buschmais.jqassistant.core.report.impl.XmlReportWriter;
+import com.buschmais.jqassistant.core.report.impl.ReportContextImpl;
+import com.buschmais.jqassistant.core.report.impl.XmlReportPlugin;
 import com.buschmais.jqassistant.core.report.model.TestDescriptorWithLanguageElement;
 import com.buschmais.jqassistant.core.rule.api.reader.RowCountVerification;
 
@@ -32,48 +33,47 @@ public final class XmlReportTestHelper {
      * @throws ReportException
      *             If the test fails.
      */
-    public static String createXmlReport() throws ReportException {
-        StringWriter writer = new StringWriter();
-        XmlReportWriter xmlReportWriter = new XmlReportWriter(writer);
+    public static File createXmlReport() throws ReportException {
+        XmlReportPlugin xmlReportWriter = getXmlReportWriter();
         xmlReportWriter.begin();
-        Concept concept = Concept.Builder.newConcept().id("my:concept").description("My concept description").severity(Severity.MAJOR)
+        Concept concept = Concept.builder().id("my:concept").description("My concept description").severity(Severity.MAJOR)
                 .executable(new CypherExecutable("match...")).verification(ROW_COUNT_VERIFICATION)
-                .report(Report.Builder.newInstance().primaryColumn("c2").get()).get();
+                .report(Report.builder().primaryColumn("c2").build()).build();
         Map<String, Severity> concepts = new HashMap<>();
         concepts.put("my:concept", Severity.INFO);
-        Group group = Group.Builder.newGroup().id("default").description("My group").conceptIds(concepts).get();
+        Group group = Group.builder().id("default").description("My group").concepts(concepts).build();
         xmlReportWriter.beginGroup(group);
         xmlReportWriter.beginConcept(concept);
         List<Map<String, Object>> rows = new ArrayList<>();
         rows.add(createRow());
-        Result<Concept> result = new Result<>(concept, Result.Status.SUCCESS, Severity.CRITICAL, Arrays.asList(C1, C2), rows);
+        Result<Concept> result = Result.<Concept> builder().rule(concept).status(Result.Status.SUCCESS).severity(Severity.CRITICAL)
+                .columnNames(Arrays.asList(C1, C2)).rows(rows).build();
         xmlReportWriter.setResult(result);
         xmlReportWriter.endConcept();
         xmlReportWriter.endGroup();
         xmlReportWriter.end();
-        return writer.toString();
+        return xmlReportWriter.getXmlReportFile();
     }
 
-    public static String createXmlWithUmlauts(String description) throws ReportException {
-        StringWriter writer = new StringWriter();
-        XmlReportWriter xmlReportWriter = new XmlReportWriter(writer);
+    public static File createXmlWithUmlauts(String description) throws ReportException {
+        XmlReportPlugin xmlReportWriter = getXmlReportWriter();
         xmlReportWriter.begin();
-        Concept concept = Concept.Builder.newConcept().id("mein:Konzept").description(description).severity(Severity.MAJOR)
-                .executable(new CypherExecutable("match...")).verification(ROW_COUNT_VERIFICATION)
-                .report(Report.Builder.newInstance().primaryColumn("c2").get()).get();
+        Concept concept = Concept.builder().id("mein:Konzept").description(description).severity(Severity.MAJOR).executable(new CypherExecutable("match..."))
+                .verification(ROW_COUNT_VERIFICATION).report(Report.builder().primaryColumn("c2").build()).build();
         Map<String, Severity> concepts = new HashMap<>();
         concepts.put("mein:Konzept", Severity.INFO);
-        Group group = Group.Builder.newGroup().id("default").description("Meine Gruppe").conceptIds(concepts).get();
+        Group group = Group.builder().id("default").description("Meine Gruppe").concepts(concepts).build();
         xmlReportWriter.beginGroup(group);
         xmlReportWriter.beginConcept(concept);
         List<Map<String, Object>> rows = new ArrayList<>();
         rows.add(createRow());
-        Result<Concept> result = new Result<>(concept, Result.Status.SUCCESS, Severity.CRITICAL, Arrays.asList(C1, C2), rows);
+        Result<Concept> result = Result.<Concept> builder().rule(concept).status(Result.Status.SUCCESS).severity(Severity.CRITICAL)
+                .columnNames(Arrays.asList(C1, C2)).rows(rows).build();
         xmlReportWriter.setResult(result);
         xmlReportWriter.endConcept();
         xmlReportWriter.endGroup();
         xmlReportWriter.end();
-        return writer.toString();
+        return xmlReportWriter.getXmlReportFile();
     }
 
     /**
@@ -83,26 +83,35 @@ public final class XmlReportTestHelper {
      * @throws ReportException
      *             If the test fails.
      */
-    public static String createXmlReportWithConstraints() throws ReportException {
-        StringWriter writer = new StringWriter();
-        XmlReportWriter xmlReportWriter = new XmlReportWriter(writer);
+    public static File createXmlReportWithConstraints() throws ReportException {
+        XmlReportPlugin xmlReportWriter = getXmlReportWriter();
         xmlReportWriter.begin();
 
-        Constraint constraint = Constraint.Builder.newConstraint().id("my:Constraint").description("My constraint description").severity(Severity.BLOCKER)
-                .executable(new CypherExecutable("match...")).verification(ROW_COUNT_VERIFICATION).report(Report.Builder.newInstance().get()).get();
+        Constraint constraint = Constraint.builder().id("my:Constraint").description("My constraint description").severity(Severity.BLOCKER)
+                .executable(new CypherExecutable("match...")).verification(ROW_COUNT_VERIFICATION).report(Report.builder().build()).build();
         Map<String, Severity> constraints = new HashMap<>();
         constraints.put("my:Constraint", Severity.INFO);
-        Group group = Group.Builder.newGroup().id("default").description("My group").constraintIds(constraints).get();
+        Group group = Group.builder().id("default").description("My group").constraints(constraints).build();
         xmlReportWriter.beginGroup(group);
         xmlReportWriter.beginConstraint(constraint);
         List<Map<String, Object>> rows = new ArrayList<>();
         rows.add(createRow());
-        Result<Constraint> result = new Result<>(constraint, Result.Status.FAILURE, Severity.CRITICAL, Arrays.asList(C1, C2), rows);
+        Result<Constraint> result = Result.<Constraint> builder().rule(constraint).status(Result.Status.FAILURE).severity(Severity.CRITICAL)
+                .columnNames(Arrays.asList(C1, C2)).rows(rows).build();
         xmlReportWriter.setResult(result);
         xmlReportWriter.endConstraint();
         xmlReportWriter.endGroup();
         xmlReportWriter.end();
-        return writer.toString();
+        return xmlReportWriter.getXmlReportFile();
+    }
+
+    private static XmlReportPlugin getXmlReportWriter() {
+        XmlReportPlugin xmlReportWriter = new XmlReportPlugin();
+        xmlReportWriter.initialize();
+        File reportDirectory = new File("target/test");
+        reportDirectory.mkdirs();
+        xmlReportWriter.configure(new ReportContextImpl(reportDirectory), Collections.EMPTY_MAP);
+        return xmlReportWriter;
     }
 
     private static Map<String, Object> createRow() {

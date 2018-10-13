@@ -10,66 +10,59 @@ import com.buschmais.jqassistant.core.analysis.api.rule.*;
 import com.buschmais.jqassistant.core.rule.api.reader.AggregationVerification;
 import com.buschmais.jqassistant.core.rule.api.reader.RowCountVerification;
 import com.buschmais.jqassistant.core.rule.api.reader.RuleConfiguration;
-import com.buschmais.jqassistant.core.rule.api.reader.RuleSetReader;
+import com.buschmais.jqassistant.core.rule.api.reader.RuleParserPlugin;
 import com.buschmais.jqassistant.core.rule.api.source.RuleSource;
-import com.buschmais.jqassistant.core.rule.schema.v1.AggregationVerificationType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ConceptType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ConstraintType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ExecutableRuleType;
-import com.buschmais.jqassistant.core.rule.schema.v1.GroupType;
-import com.buschmais.jqassistant.core.rule.schema.v1.IncludedReferenceType;
-import com.buschmais.jqassistant.core.rule.schema.v1.JqassistantRules;
-import com.buschmais.jqassistant.core.rule.schema.v1.ParameterType;
-import com.buschmais.jqassistant.core.rule.schema.v1.PropertyType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ReferenceType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ReportType;
-import com.buschmais.jqassistant.core.rule.schema.v1.RowCountVerificationType;
-import com.buschmais.jqassistant.core.rule.schema.v1.ScriptType;
-import com.buschmais.jqassistant.core.rule.schema.v1.SeverityEnumType;
-import com.buschmais.jqassistant.core.rule.schema.v1.SeverityRuleType;
-import com.buschmais.jqassistant.core.rule.schema.v1.VerificationType;
+import com.buschmais.jqassistant.core.rule.impl.SourceExecutable;
+import com.buschmais.jqassistant.core.rule.schema.v1.*;
 import com.buschmais.jqassistant.core.shared.xml.JAXBUnmarshaller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link RuleSetReader} implementation.
+ * A {@link RuleParserPlugin} implementation.
  */
-public class XmlRuleSetReader implements RuleSetReader {
+public class XmlRuleParserPlugin implements RuleParserPlugin {
 
-    public static final String NAMESPACE_RULES_1_0 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.0";
-    public static final String NAMESPACE_RULES_1_1 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.1";
-    public static final String NAMESPACE_RULES_1_2 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.2";
-    public static final String NAMESPACE_RULES_1_3 = "http://www.buschmais.com/jqassistant/core/rule/schema/v1.3";
-    public static final String RULES_SCHEMA_LOCATION = "/META-INF/xsd/jqassistant-rules-1.3.xsd";
+    private static final String NAMESPACE_RULES_1_0 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.0";
+    private static final String NAMESPACE_RULES_1_1 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.1";
+    private static final String NAMESPACE_RULES_1_2 = "http://www.buschmais.com/jqassistant/core/analysis/rules/schema/v1.2";
+    private static final String NAMESPACE_RULES_1_3 = "http://www.buschmais.com/jqassistant/core/rule/schema/v1.3";
+    private static final String NAMESPACE_RULES_1_4 = "http://www.buschmais.com/jqassistant/core/rule/schema/v1.4";
+    private static final String RULES_SCHEMA_LOCATION = "/META-INF/xsd/jqassistant-rules-1.4.xsd";
 
-    public static final Schema SCHEMA = XmlHelper.getSchema(RULES_SCHEMA_LOCATION);
-    public static final RowCountVerification DEFAULT_VERIFICATION = RowCountVerification.builder().build();
+    private static final Schema SCHEMA = XmlHelper.getSchema(RULES_SCHEMA_LOCATION);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(XmlRuleSetReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(XmlRuleParserPlugin.class);
 
     private RuleConfiguration ruleConfiguration;
 
     private JAXBUnmarshaller<JqassistantRules> jaxbUnmarshaller;
 
-    public XmlRuleSetReader(RuleConfiguration ruleConfiguration) {
-        this.ruleConfiguration = ruleConfiguration;
+    @Override
+    public void initialize() {
         Map<String, String> namespaceMappings = new HashMap<>();
-        namespaceMappings.put(NAMESPACE_RULES_1_0, NAMESPACE_RULES_1_3);
-        namespaceMappings.put(NAMESPACE_RULES_1_1, NAMESPACE_RULES_1_3);
-        namespaceMappings.put(NAMESPACE_RULES_1_2, NAMESPACE_RULES_1_3);
+        namespaceMappings.put(NAMESPACE_RULES_1_0, NAMESPACE_RULES_1_4);
+        namespaceMappings.put(NAMESPACE_RULES_1_1, NAMESPACE_RULES_1_4);
+        namespaceMappings.put(NAMESPACE_RULES_1_2, NAMESPACE_RULES_1_4);
+        namespaceMappings.put(NAMESPACE_RULES_1_3, NAMESPACE_RULES_1_4);
         this.jaxbUnmarshaller = new JAXBUnmarshaller<>(JqassistantRules.class, SCHEMA, namespaceMappings);
     }
 
     @Override
-    public void read(List<? extends RuleSource> sources, RuleSetBuilder ruleSetBuilder) throws RuleException {
-        for (RuleSource ruleSource : sources) {
-            if (ruleSource.isType(RuleSource.Type.XML)) {
-                List<JqassistantRules> rules = readXmlSource(ruleSource);
-                convert(rules, ruleSource, ruleSetBuilder);
-            }
-        }
+    public void configure(RuleConfiguration ruleConfiguration) {
+        this.ruleConfiguration = ruleConfiguration;
+    }
+
+    @Override
+    public boolean accepts(RuleSource ruleSource) {
+        return ruleSource.getId().toLowerCase().endsWith(".xml");
+    }
+
+    @Override
+    public void parse(RuleSource ruleSource, RuleSetBuilder ruleSetBuilder) throws RuleException {
+        List<JqassistantRules> rules = readXmlSource(ruleSource);
+        convert(rules, ruleSource, ruleSetBuilder);
     }
 
     /**
@@ -124,8 +117,8 @@ public class XmlRuleSetReader implements RuleSetReader {
         Map<String, Severity> includeConcepts = getIncludedReferences(referenceableType.getIncludeConcept());
         Map<String, Severity> includeConstraints = getIncludedReferences(referenceableType.getIncludeConstraint());
         Map<String, Severity> includeGroups = getIncludedReferences(referenceableType.getIncludeGroup());
-        return Group.Builder.newGroup().id(id).severity(severity).ruleSource(ruleSource).conceptIds(includeConcepts).constraintIds(includeConstraints)
-                .groupIds(includeGroups).get();
+        return Group.builder().id(id).severity(severity).ruleSource(ruleSource).concepts(includeConcepts).constraints(includeConstraints)
+                .groups(includeGroups).build();
     }
 
     private Concept createConcept(String id, RuleSource ruleSource, ConceptType referenceableType) throws RuleException {
@@ -139,8 +132,8 @@ public class XmlRuleSetReader implements RuleSetReader {
         String deprecated = referenceableType.getDeprecated();
         Verification verification = getVerification(referenceableType.getVerify());
         Report report = getReport(referenceableType.getReport());
-        return Concept.Builder.newConcept().id(id).description(description).ruleSource(ruleSource).severity(severity).deprecation(deprecated)
-                .executable(executable).parameters(parameters).requiresConceptIds(requiresConcepts).verification(verification).report(report).get();
+        return Concept.builder().id(id).description(description).ruleSource(ruleSource).severity(severity).deprecation(deprecated).executable(executable)
+                .parameters(parameters).requiresConcepts(requiresConcepts).verification(verification).report(report).build();
     }
 
     /**
@@ -169,7 +162,7 @@ public class XmlRuleSetReader implements RuleSetReader {
     }
 
     private Constraint createConstraint(String id, RuleSource ruleSource, ConstraintType referenceableType) throws RuleException {
-        Executable executable = createExecutable(referenceableType);
+        Executable<?> executable = createExecutable(referenceableType);
         String description = referenceableType.getDescription();
         Map<String, Parameter> parameters = getRequiredParameters(referenceableType.getRequiresParameter());
         SeverityEnumType severityType = referenceableType.getSeverity();
@@ -179,17 +172,23 @@ public class XmlRuleSetReader implements RuleSetReader {
         String deprecated = referenceableType.getDeprecated();
         Verification verification = getVerification(referenceableType.getVerify());
         Report report = getReport(referenceableType.getReport());
-        return Constraint.Builder.newConstraint().id(id).description(description).ruleSource(ruleSource).severity(severity).deprecation(deprecated)
-                .executable(executable).parameters(parameters).requiresConceptIds(requiresConcepts).verification(verification).report(report).get();
+        return Constraint.builder().id(id).description(description).ruleSource(ruleSource).severity(severity).deprecation(deprecated).executable(executable)
+                .parameters(parameters).requiresConcepts(requiresConcepts).verification(verification).report(report).build();
     }
 
-    private Executable createExecutable(ExecutableRuleType executableRuleType) throws RuleException {
+    private Executable<?> createExecutable(ExecutableRuleType executableRuleType) throws RuleException {
+        SourceType source = executableRuleType.getSource();
+        if (source != null) {
+            return new SourceExecutable<>(source.getLanguage().toLowerCase(), source.getValue(), String.class);
+        }
+        // for compatibility
         String cypher = executableRuleType.getCypher();
-        ScriptType scriptType = executableRuleType.getScript();
         if (cypher != null) {
             return new CypherExecutable(cypher);
-        } else if (scriptType != null) {
-            return new ScriptExecutable(scriptType.getLanguage(), scriptType.getValue());
+        }
+        SourceType scriptType = executableRuleType.getScript();
+        if (scriptType != null) {
+            return new ScriptExecutable(scriptType.getLanguage().toLowerCase(), scriptType.getValue());
         }
         throw new RuleException("Cannot determine executable for " + executableRuleType.getId());
     }
@@ -201,16 +200,16 @@ public class XmlRuleSetReader implements RuleSetReader {
         if (verificationType != null) {
             RowCountVerificationType rowCountVerificationType = verificationType.getRowCount();
             AggregationVerificationType aggregationVerificationType = verificationType.getAggregation();
-            if (rowCountVerificationType != null) {
-                return RowCountVerification.builder().min(rowCountVerificationType.getMin()).max(rowCountVerificationType.getMax()).build();
-            } else if (aggregationVerificationType != null) {
+            if (aggregationVerificationType != null) {
                 return AggregationVerification.builder().column(aggregationVerificationType.getColumn()).min(aggregationVerificationType.getMin())
                         .max(aggregationVerificationType.getMax()).build();
+            } else if (rowCountVerificationType != null) {
+                return RowCountVerification.builder().min(rowCountVerificationType.getMin()).max(rowCountVerificationType.getMax()).build();
             } else {
                 throw new RuleException("Unsupported verification " + verificationType);
             }
         }
-        return DEFAULT_VERIFICATION;
+        return null;
     }
 
     private Map<String, Boolean> getRequiresConcepts(List<? extends ReferenceType> referenceTypes) {

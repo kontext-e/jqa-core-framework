@@ -1,25 +1,13 @@
 package com.buschmais.jqassistant.core.analysis.api.rule;
 
+import com.buschmais.jqassistant.core.rule.impl.SourceExecutable;
+
 /**
  * Represents an executable script.
  */
-public class ScriptExecutable implements Executable {
-
-    private String language;
-
-    private String source;
+public class ScriptExecutable extends SourceExecutable<String> {
 
     public ScriptExecutable(String language, String source) {
-        this.language = language;
-        this.source = source;
+        super(language, source, String.class);
     }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
 }

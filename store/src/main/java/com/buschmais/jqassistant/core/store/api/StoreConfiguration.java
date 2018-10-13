@@ -3,7 +3,10 @@ package com.buschmais.jqassistant.core.store.api;
 import java.net.URI;
 import java.util.Properties;
 
+import com.buschmais.jqassistant.neo4j.backend.bootstrap.EmbeddedNeo4jConfiguration;
+
 import lombok.*;
+import lombok.Builder.Default;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -26,5 +29,10 @@ public class StoreConfiguration {
 
     private String encryptionLevel;
 
-    private Properties properties;
+    @Default
+    private Properties properties = new Properties();
+
+    @Default
+    private EmbeddedNeo4jConfiguration embedded = EmbeddedNeo4jConfiguration.builder().build();
+
 }

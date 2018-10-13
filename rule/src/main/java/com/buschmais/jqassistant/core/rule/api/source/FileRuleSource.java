@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -23,13 +25,13 @@ public class FileRuleSource extends RuleSource {
     }
 
     @Override
-    protected Type getType() {
-        return selectTypeById();
+    public String getId() {
+        return file.getAbsolutePath();
     }
 
     @Override
-    public String getId() {
-        return file.getAbsolutePath();
+    public URL getURL() throws MalformedURLException  {
+        return this.file.toURI().toURL();
     }
 
     @Override
@@ -41,12 +43,8 @@ public class FileRuleSource extends RuleSource {
         final List<File> ruleFiles = new ArrayList<>();
         new DirectoryWalker<File>() {
             @Override
-            protected void handleFile(File file, int depth, Collection<File> results) throws IOException {
-                boolean isFile = file.isFile();
-                boolean isAsciiDocFile = Type.AsciiDoc.matches(file);
-                boolean isXMLFile = Type.XML.matches(file);
-
-                if (isFile && (isAsciiDocFile || isXMLFile)) {
+            protected void handleFile(File file, int depth, Collection<File> results) {
+                if (file.isFile()) {
                     results.add(file);
                 }
             }

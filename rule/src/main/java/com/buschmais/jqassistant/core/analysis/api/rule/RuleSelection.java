@@ -5,9 +5,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import com.buschmais.jqassistant.core.shared.annotation.ToBeRemovedInVersion;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
 /**
  * Represents a selection of rules.
  */
+@Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RuleSelection {
 
     private static final String GROUP_DEFAULT = "default";
@@ -18,21 +28,22 @@ public class RuleSelection {
 
     private List<String> groupIds = new ArrayList<>();
 
-    public List<String> getConceptIds() {
-        return conceptIds;
+    @Deprecated
+    @ToBeRemovedInVersion(major = 1, minor = 6)
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public List<String> getConstraintIds() {
-        return constraintIds;
-    }
-
-    public List<String> getGroupIds() {
-        return groupIds;
+    @Deprecated
+    @ToBeRemovedInVersion(major = 1, minor = 6)
+    private RuleSelection() {
     }
 
     /**
      * A builder for a rule selection.
      */
+    @Deprecated
+    @ToBeRemovedInVersion(major = 1, minor = 6)
     public static class Builder {
 
         private RuleSelection ruleSelection = new RuleSelection();
@@ -42,7 +53,7 @@ public class RuleSelection {
          * {@link RuleSelection} of
          * all rules contained in the given
          * {@link RuleSet}.
-         * 
+         *
          * @param ruleSet
          *            The rule set.
          * @return The rule selection.
@@ -52,26 +63,26 @@ public class RuleSelection {
             Set<String> constraintIds = ruleSet.getConstraintBucket().getIds();
             Set<String> groupIds = ruleSet.getGroupsBucket().getIds();
 
-            return newInstance().addGroupIds(groupIds)
+            return builder().addGroupIds(groupIds)
                                 .addConstraintIds(constraintIds)
                                 .addConceptIds(conceptIds)
-                                .get();
+                                .build();
         }
 
         /**
          * Create the default rule selection from a
          * {@link RuleSet}.
-         * 
+         *
          * @param ruleSet
          *            The rule set.
          * @return The rule selection.
          */
         public static RuleSelection newDefault(RuleSet ruleSet) {
-            Builder builder = newInstance();
+            Builder builder = builder();
             if (ruleSet.getGroupsBucket().getIds().contains(GROUP_DEFAULT)) {
-                builder.addGroupId(GROUP_DEFAULT).get();
+                builder.addGroupId(GROUP_DEFAULT);
             }
-            return builder.get();
+            return builder.build();
         }
 
         /**
@@ -82,19 +93,21 @@ public class RuleSelection {
          * @return The rule selection.
          */
         public static RuleSelection select(RuleSet ruleSet, Collection<String> groupIds, Collection<String> constraintIds, Collection<String> conceptIds) {
-            Builder builder = newInstance().addGroupIds(groupIds).addConstraintIds(constraintIds).addConceptIds(conceptIds);
+            Builder builder = builder().addGroupIds(groupIds).addConstraintIds(constraintIds).addConceptIds(conceptIds);
             if (builder.isEmpty()) {
                 return RuleSelection.Builder.newDefault(ruleSet);
             }
-            return builder.get();
+            return builder.build();
 
         }
 
         /**
          * Create a new builder.
-         * 
+         *
          * @return The builder.
          */
+        @Deprecated
+        @ToBeRemovedInVersion(major = 1, minor = 6)
         public static Builder newInstance() {
             return new Builder();
         }
@@ -129,7 +142,13 @@ public class RuleSelection {
             return this;
         }
 
+        @Deprecated
+        @ToBeRemovedInVersion(major = 1, minor = 6)
         public RuleSelection get() {
+            return build();
+        }
+
+        public RuleSelection build() {
             return ruleSelection;
         }
 

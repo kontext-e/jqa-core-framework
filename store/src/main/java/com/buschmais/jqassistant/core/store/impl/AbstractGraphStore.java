@@ -17,7 +17,6 @@ import com.buschmais.xo.api.XOManagerFactory;
 import com.buschmais.xo.api.bootstrap.XO;
 import com.buschmais.xo.api.bootstrap.XOUnit;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +45,10 @@ public abstract class AbstractGraphStore implements Store {
     @Override
     public void start(Collection<Class<?>> types) {
         XOUnit.XOUnitBuilder builder = XOUnit.builder().uri(storeConfiguration.getUri()).types(types).validationMode(ValidationMode.NONE)
-                                             .mappingConfiguration(XOUnit.MappingConfiguration.builder().strictValidation(true).build());
-        configure(builder);
+            .mappingConfiguration(XOUnit.MappingConfiguration.builder().strictValidation(true).build());
+        configure(builder, storeConfiguration);
         xoManagerFactory = XO.createXOManagerFactory(builder.build());
+        initialize(xoManagerFactory);
         xoManager = xoManagerFactory.createXOManager();
     }
 
@@ -64,6 +64,11 @@ public abstract class AbstractGraphStore implements Store {
         if (xoManagerFactory != null) {
             xoManagerFactory.close();
         }
+    }
+
+    @Override
+    public XOManager getXOManager() {
+        return xoManager;
     }
 
     @Override
@@ -137,8 +142,8 @@ public abstract class AbstractGraphStore implements Store {
     }
 
     @Override
-    public <T extends Descriptor> T find(Class<T> type, String fullQualifiedName) {
-        ResultIterable<T> result = xoManager.find(type, fullQualifiedName);
+    public <T extends Descriptor> T find(Class<T> type, String value) {
+        ResultIterable<T> result = xoManager.find(type, value);
         return result.hasResult() ? result.getSingleResult() : null;
     }
 
@@ -185,11 +190,6 @@ public abstract class AbstractGraphStore implements Store {
     }
 
     @Override
-    public GraphDatabaseService getGraphDatabaseService() {
-        return getGraphDatabaseService(xoManager);
-    }
-
-    @Override
     public void reset() {
         LOGGER.info("Resetting store.");
         long nodes;
@@ -213,18 +213,14 @@ public abstract class AbstractGraphStore implements Store {
     }
 
     /**
-     * Return the graph database service wrapped by the given XOManager.
-     * 
-     * @param xoManager
-     *            The XOManager.
-     * @return The graph database service instance.
-     */
-    protected abstract GraphDatabaseService getGraphDatabaseService(XOManager xoManager);
-
-    /**
      * Configure store specific options.
      */
-    protected abstract void configure(XOUnit.XOUnitBuilder builder);
+    protected abstract XOUnit configure(XOUnit.XOUnitBuilder builder, StoreConfiguration storeConfiguration);
+
+    /**
+     * Initialize store using configured {@link XOManagerFactory}.
+     */
+    protected abstract void initialize(XOManagerFactory xoManagerFactory);
 
     protected abstract int getAutocommitThreshold();
 

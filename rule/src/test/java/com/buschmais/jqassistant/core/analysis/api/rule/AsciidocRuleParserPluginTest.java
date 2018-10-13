@@ -3,26 +3,23 @@ package com.buschmais.jqassistant.core.analysis.api.rule;
 import java.util.Collections;
 import java.util.Map;
 
+import com.buschmais.jqassistant.core.rule.api.reader.RuleConfiguration;
+
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class AsciiDocRuleSetReaderTest {
+public class AsciidocRuleParserPluginTest {
 
     @Test
     public void cypherRules() throws Exception {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/junit-without-assert.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/junit-without-assert.adoc", RuleConfiguration.DEFAULT);
         ConceptBucket concepts = ruleSet.getConceptBucket();
         assertThat(concepts.size(), equalTo(2));
 
@@ -30,18 +27,18 @@ public class AsciiDocRuleSetReaderTest {
         assertThat(concept1.getId(), equalTo("junit4:TestClassOrMethod"));
         assertThat(concept1.getDescription(), CoreMatchers.containsString("labels them and their containing classes with `:Test` and `:Junit4`."));
 
-        Executable executable1 = concept1.getExecutable();
+        Executable<String> executable1 = (Executable<String>) concept1.getExecutable();
         assertThat(executable1, instanceOf(CypherExecutable.class));
-        assertThat(((CypherExecutable) executable1).getStatement(), containsString("c:Test:Junit4, m:Test:Junit4"));
+        assertThat(executable1.getSource(), containsString("c:Test:Junit4, m:Test:Junit4"));
         assertThat(concept1.getRequiresConcepts().keySet(), IsEmptyCollection.<String> empty());
 
         Concept concept2 = concepts.getById("junit4:AssertMethod");
         assertThat(concept2.getId(), containsString("junit4:AssertMethod"));
         assertThat(concept2.getDescription(), containsString("Labels all assertion methods declared by `org.junit.Assert` with `:Assert`."));
 
-        Executable executable2 = concept2.getExecutable();
+        Executable<String> executable2 = (Executable<String>) concept2.getExecutable();
         assertThat(executable2, instanceOf(CypherExecutable.class));
-        assertThat(((CypherExecutable) executable2).getStatement(), containsString("and assertMethod.signature =~ 'void assert.*'"));
+        assertThat(executable2.getSource(), containsString("and assertMethod.signature =~ 'void assert.*'"));
         assertThat(concept2.getRequiresConcepts().keySet(), IsEmptyCollection.<String> empty());
 
         ConstraintBucket constraints = ruleSet.getConstraintBucket();
@@ -53,16 +50,16 @@ public class AsciiDocRuleSetReaderTest {
         assertEquals("junit4:TestMethodWithoutAssertion", constraint.getId());
         assertEquals("All test methods must perform assertions.", constraint.getDescription());
 
-        Executable constraintExecutable = constraint.getExecutable();
+        Executable<String> constraintExecutable = (Executable<String>) constraint.getExecutable();
         assertThat(constraintExecutable, instanceOf(CypherExecutable.class));
-        assertThat(((CypherExecutable) constraintExecutable).getStatement(), containsString("not (testMethod)-[:INVOKES*]->(:Method:Assert)"));
+        assertThat(constraintExecutable.getSource(), containsString("not (testMethod)-[:INVOKES*]->(:Method:Assert)"));
 
         assertThat(ruleSet.getConceptBucket().getIds(), containsInAnyOrder(constraint.getRequiresConcepts().keySet().toArray()));
     }
 
     @Test
     public void scriptRules() throws Exception {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/javascript-rules.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/javascript-rules.adoc", RuleConfiguration.DEFAULT);
         ConceptBucket concepts = ruleSet.getConceptBucket();
         assertThat(concepts.size(), equalTo(1));
 
@@ -83,7 +80,7 @@ public class AsciiDocRuleSetReaderTest {
 
     @Test
     public void groups() throws Exception {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/group.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/group.adoc", RuleConfiguration.DEFAULT);
         assertThat(ruleSet.getConceptBucket().getIds(), hasItems("test:Concept", "test:CriticalConcept"));
         assertThat(ruleSet.getConstraintBucket().getIds(), hasItems("test:Constraint", "test:CriticalConstraint"));
         GroupsBucket groups = ruleSet.getGroupsBucket();
@@ -107,7 +104,7 @@ public class AsciiDocRuleSetReaderTest {
 
     @Test
     public void brokenRules() throws Exception {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/broken-rules.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/broken-rules.adoc", RuleConfiguration.DEFAULT);
         assertThat(ruleSet.getConceptBucket().getIds(), hasItems("test:MissingDescription"));
 
         ConceptBucket concepts = ruleSet.getConceptBucket();
@@ -121,7 +118,7 @@ public class AsciiDocRuleSetReaderTest {
 
     @Test
     public void ruleParameters() throws Exception {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/parameters.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/parameters.adoc", RuleConfiguration.DEFAULT);
         Concept concept = ruleSet.getConceptBucket().getById("test:ConceptWithParameters");
         verifyParameters(concept, false);
         // Concept conceptWithDefaultValues =
@@ -136,14 +133,14 @@ public class AsciiDocRuleSetReaderTest {
 
     @Test
     public void documentAsGroup() throws RuleException {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/document-as-group.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/document-as-group.adoc", RuleConfiguration.DEFAULT);
         Group documentGroup = ruleSet.getGroupsBucket().getById("documentGroup");
         assertThat(documentGroup.getId(), equalTo("documentGroup"));
     }
 
     @Test
     public void definitionList() throws RuleException {
-        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/definition-list.adoc");
+        RuleSet ruleSet = RuleSetTestHelper.readRuleSet("/definition-list.adoc", RuleConfiguration.DEFAULT);
         Group testGroup = ruleSet.getGroupsBucket().getById("test:Default");
         assertThat(testGroup.getId(), equalTo("test:Default"));
         Concept testConcept = ruleSet.getConceptBucket().getById("test:Concept");
@@ -156,7 +153,7 @@ public class AsciiDocRuleSetReaderTest {
         RuleSetTestHelper.verifyParameter(parameters, "byteParam", Parameter.Type.BYTE, assertDefaultValue ? (byte) 42 : null);
         RuleSetTestHelper.verifyParameter(parameters, "shortParam", Parameter.Type.SHORT, assertDefaultValue ? (short) 42 : null);
         RuleSetTestHelper.verifyParameter(parameters, "intParam", Parameter.Type.INT, assertDefaultValue ? 42 : null);
-        RuleSetTestHelper.verifyParameter(parameters, "longParam", Parameter.Type.LONG, assertDefaultValue ? 42l : null);
+        RuleSetTestHelper.verifyParameter(parameters, "longParam", Parameter.Type.LONG, assertDefaultValue ? 42L : null);
         RuleSetTestHelper.verifyParameter(parameters, "floatParam", Parameter.Type.FLOAT, assertDefaultValue ? (float) 42.0 : null);
         RuleSetTestHelper.verifyParameter(parameters, "doubleParam", Parameter.Type.DOUBLE, assertDefaultValue ? 42.0 : null);
         RuleSetTestHelper.verifyParameter(parameters, "booleanParam", Parameter.Type.BOOLEAN, assertDefaultValue ? true : null);

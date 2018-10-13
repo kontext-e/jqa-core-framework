@@ -3,13 +3,13 @@ package com.buschmais.jqassistant.core.store.api;
 import java.util.Collection;
 import java.util.Map;
 
+import com.buschmais.jqassistant.core.shared.annotation.ToBeRemovedInVersion;
 import com.buschmais.jqassistant.core.store.api.model.Descriptor;
 import com.buschmais.jqassistant.core.store.api.model.FullQualifiedNameDescriptor;
 import com.buschmais.xo.api.Example;
 import com.buschmais.xo.api.Query.Result;
 import com.buschmais.xo.api.Query.Result.CompositeRowObject;
-
-import org.neo4j.graphdb.GraphDatabaseService;
+import com.buschmais.xo.api.XOManager;
 
 /**
  * Defines the store for {@link Descriptor}s.
@@ -35,6 +35,13 @@ public interface Store {
      */
     void stop();
 
+    /**
+     * Return the initialized {@link XOManager} used by this store.
+     * 
+     * @return The {@link XOManager}.
+     */
+    XOManager getXOManager();
+    
     /**
      * Clear the content of the store, i.e. delete all nodes and relationships.
      */
@@ -69,7 +76,7 @@ public interface Store {
 
     /**
      * Creates a {@link Descriptor} of the given type.
-     * 
+     *
      * @param type
      *            The type.
      * @return The {@link Descriptor}.
@@ -89,7 +96,7 @@ public interface Store {
 
     /**
      * Creates a relation between to {@link Descriptor}s.
-     * 
+     *
      * @param source
      *            The source descriptor.
      * @param relationType
@@ -117,7 +124,7 @@ public interface Store {
 
     /**
      * Creates a {@link Descriptor} of the given type with a full qualified name
-     * 
+     *
      * @param type
      *            The type.
      * @param fullQualifiedName
@@ -129,7 +136,7 @@ public interface Store {
 
     /**
      * Delete a descriptor.
-     * 
+     *
      * @param descriptor
      *            The descriptor.
      * @param <T>
@@ -139,7 +146,7 @@ public interface Store {
 
     /**
      * Migrates the descriptor instance to the given sub-type.
-     * 
+     *
      * @param descriptor
      *            The descriptor.
      * @param concreteType
@@ -149,11 +156,13 @@ public interface Store {
      * @param <C>
      *            The concrete type.
      */
+    @Deprecated
+    @ToBeRemovedInVersion(major = 1, minor = 6)
     <T extends Descriptor, C> C migrate(T descriptor, Class<C> concreteType, Class<?>... types);
 
     /**
      * Add a descriptor type to an existing descriptor.
-     * 
+     *
      * @param descriptor
      *            The descriptor.
      * @param newDescriptorType
@@ -201,15 +210,15 @@ public interface Store {
     <T extends Descriptor, N extends Descriptor> N removeDescriptorType(T descriptor, Class<?> obsoleteDescriptorType, Class<N> as);
 
     /**
-     * Finds a {@link Descriptor}.
-     * 
+     * Finds a {@link Descriptor} by an indexed property..
+     *
      * @param type
      *            The type.
-     * @param fullQualifiedName
+     * @param value
      *            The full qualified name.
      * @return The {@link Descriptor}.
      */
-    <T extends Descriptor> T find(Class<T> type, String fullQualifiedName);
+    <T extends Descriptor> T find(Class<T> type, String value);
 
     /**
      * Executes a CYPHER query.
@@ -247,12 +256,5 @@ public interface Store {
      * @return The {@link Result}.
      */
     <Q> Result<Q> executeQuery(Class<Q> query, Map<String, Object> parameters);
-
-    /**
-     * Return the underlying graph database service instance.
-     * 
-     * @return The graph data base service.
-     */
-    GraphDatabaseService getGraphDatabaseService();
 
 }

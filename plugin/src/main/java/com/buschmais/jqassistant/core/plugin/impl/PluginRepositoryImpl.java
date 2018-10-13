@@ -11,13 +11,15 @@ public class PluginRepositoryImpl implements PluginRepository {
     private ScannerPluginRepository scannerPluginRepository;
     private ScopePluginRepository scopePluginRepository;
     private RulePluginRepository rulePluginRepository;
+    private RuleInterpreterPluginRepository ruleInterpreterPluginRepository;
+    private RuleParserPluginRepository ruleParserPluginRepository;
     private ReportPluginRepository reportPluginRepository;
 
     private ClassLoader classLoader;
 
     /**
      * Constructor.
-     * 
+     *
      * @param pluginConfigurationReader
      *            The plugin configuration reader.
      */
@@ -26,32 +28,44 @@ public class PluginRepositoryImpl implements PluginRepository {
         this.scannerPluginRepository = new ScannerPluginRepositoryImpl(pluginConfigurationReader);
         this.scopePluginRepository = new ScopePluginRepositoryImpl(pluginConfigurationReader);
         this.rulePluginRepository = new RulePluginRepositoryImpl(pluginConfigurationReader);
+        this.ruleInterpreterPluginRepository = new RuleInterpreterPluginRepositoryImpl(pluginConfigurationReader);
+        this.ruleParserPluginRepository = new RuleParserPluginRepositoryImpl(pluginConfigurationReader);
         this.reportPluginRepository = new ReportPluginRepositoryImpl(pluginConfigurationReader);
         classLoader = pluginConfigurationReader.getClassLoader();
     }
 
     @Override
-    public ModelPluginRepository getModelPluginRepository() throws PluginRepositoryException {
+    public ModelPluginRepository getModelPluginRepository() {
         return modelPluginRepository;
     }
 
     @Override
-    public ScannerPluginRepository getScannerPluginRepository() throws PluginRepositoryException {
+    public ScannerPluginRepository getScannerPluginRepository() {
         return scannerPluginRepository;
     }
 
     @Override
-    public ScopePluginRepository getScopePluginRepository() throws PluginRepositoryException {
+    public ScopePluginRepository getScopePluginRepository() {
         return scopePluginRepository;
     }
 
     @Override
-    public RulePluginRepository getRulePluginRepository() throws PluginRepositoryException {
+    public RulePluginRepository getRulePluginRepository() {
         return rulePluginRepository;
     }
 
     @Override
-    public ReportPluginRepository getReportPluginRepository() throws PluginRepositoryException {
+    public RuleInterpreterPluginRepository getRuleInterpreterPluginRepository() {
+        return ruleInterpreterPluginRepository;
+    }
+
+    @Override
+    public RuleParserPluginRepository getRuleParserPluginRepository() {
+        return ruleParserPluginRepository;
+    }
+
+    @Override
+    public ReportPluginRepository getReportPluginRepository() {
         return reportPluginRepository;
     }
 

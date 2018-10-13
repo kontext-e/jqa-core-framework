@@ -1,6 +1,5 @@
 package com.buschmais.jqassistant.core.report;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -8,8 +7,10 @@ import java.util.Set;
 
 import com.buschmais.jqassistant.core.analysis.api.Result;
 import com.buschmais.jqassistant.core.analysis.api.rule.*;
+import com.buschmais.jqassistant.core.report.api.ReportContext;
 import com.buschmais.jqassistant.core.report.api.ReportException;
 import com.buschmais.jqassistant.core.report.api.ReportPlugin;
+import com.buschmais.jqassistant.core.report.api.ReportPlugin.Default;
 import com.buschmais.jqassistant.core.report.impl.CompositeReportPlugin;
 
 import org.junit.Before;
@@ -18,19 +19,26 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static java.util.Arrays.asList;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeReportPluginTest {
 
     @Mock
-    ReportPlugin reportWriter1;
+    ReportPlugin reportPlugin1;
 
     @Mock
-    ReportPlugin reportWriter2;
+    ReportPlugin reportPlugin2;
+
+    @Mock
+    ReportPlugin reportPlugin3;
+
+    @Mock
+    ReportPlugin selectableReportPlugin1;
+
+    @Mock
+    ReportPlugin selectableReportPlugin2;
 
     @Mock
     private Group group;
@@ -44,11 +52,14 @@ public class CompositeReportPluginTest {
     private CompositeReportPlugin compositeReportPlugin;
 
     @Before
-    public void createReportWriter() {
-        Map<String, ReportPlugin> reportWriters = new HashMap<>();
-        reportWriters.put("writer1", reportWriter1);
-        reportWriters.put("writer2", reportWriter2);
-        compositeReportPlugin = new CompositeReportPlugin(reportWriters);
+    public void setUp() {
+        Map<String, ReportPlugin> reportPlugins = new HashMap<>();
+        reportPlugins.put("plugin1", new DefaultReportPlugin(reportPlugin1));
+        reportPlugins.put("plugin2", new DefaultReportPlugin(reportPlugin2));
+        reportPlugins.put("plugin3", new DefaultReportPlugin(reportPlugin3));
+        reportPlugins.put("selectablePlugin1", selectableReportPlugin1);
+        reportPlugins.put("selectablePlugin2", selectableReportPlugin2);
+        compositeReportPlugin = new CompositeReportPlugin(reportPlugins, new HashSet<>(asList("plugin1", "plugin2")));
     }
 
     @Test
@@ -58,72 +69,82 @@ public class CompositeReportPluginTest {
 
         write(concept, constraint);
 
-        verifyInvoked(reportWriter1, concept);
-        verifyInvoked(reportWriter1, constraint);
-        verifyInvoked(reportWriter2, concept);
-        verifyInvoked(reportWriter2, constraint);
+        verifyInvoked(concept, reportPlugin1, reportPlugin2);
+        verifyNotInvoked(concept, reportPlugin3, selectableReportPlugin1, selectableReportPlugin2);
+        verifyInvoked(constraint, reportPlugin1, reportPlugin2);
+        verifyNotInvoked(constraint, reportPlugin3, selectableReportPlugin1, selectableReportPlugin2);
         verifyGroup();
     }
 
     @Test
     public void selectOneWriter() throws ReportException {
-        Concept concept = getRule(Concept.class, "writer1");
-        Constraint constraint = getRule(Constraint.class, "writer1");
+        Concept concept = getRule(Concept.class, "selectablePlugin1");
+        Constraint constraint = getRule(Constraint.class, "selectablePlugin1");
 
         write(concept, constraint);
 
-        verifyInvoked(reportWriter1, concept);
-        verifyInvoked(reportWriter1, constraint);
-        verifyNotInvoked(reportWriter2, concept);
-        verifyNotInvoked(reportWriter2, constraint);
+        verifyInvoked(concept, reportPlugin1, reportPlugin2, selectableReportPlugin1);
+        verifyNotInvoked(concept, reportPlugin3, selectableReportPlugin2);
+        verifyInvoked(constraint, reportPlugin1, reportPlugin2, selectableReportPlugin1);
+        verifyNotInvoked(constraint, reportPlugin3, selectableReportPlugin2);
         verifyGroup();
     }
 
     @Test
-    public void selectMultipleWriters() throws ReportException {
-        Concept concept = getRule(Concept.class, "writer1", "writer2");
-        Constraint constraint = getRule(Constraint.class, "writer1", "writer2");
+    public void selectMultiplePlugins() throws ReportException {
+        Concept concept = getRule(Concept.class, "selectablePlugin1", "selectablePlugin2");
+        Constraint constraint = getRule(Constraint.class, "selectablePlugin1", "selectablePlugin2");
 
         write(concept, constraint);
 
-        verifyInvoked(reportWriter1, concept);
-        verifyInvoked(reportWriter1, constraint);
-        verifyInvoked(reportWriter2, concept);
-        verifyInvoked(reportWriter2, constraint);
+        verifyInvoked(concept, reportPlugin1, reportPlugin2, selectableReportPlugin1, selectableReportPlugin2);
+        verifyInvoked(constraint, reportPlugin1, reportPlugin2, selectableReportPlugin1, selectableReportPlugin2);
+        verifyNotInvoked(concept, reportPlugin3);
+        verifyNotInvoked(constraint, reportPlugin3);
         verifyGroup();
     }
 
     private void verifyGroup() throws ReportException {
-        for (ReportPlugin reportWriter : Arrays.asList(reportWriter1, reportWriter2)) {
-            verify(reportWriter).begin();
-            verify(reportWriter).end();
-            verify(reportWriter).beginGroup(group);
-            verify(reportWriter).endGroup();
+        for (ReportPlugin reportPlugin : asList(reportPlugin1, reportPlugin2, selectableReportPlugin1, selectableReportPlugin2)) {
+            verify(reportPlugin).begin();
+            verify(reportPlugin).end();
+        }
+        for (ReportPlugin reportPlugin : asList(reportPlugin1, reportPlugin2)) {
+            verify(reportPlugin).beginGroup(group);
+            verify(reportPlugin).endGroup();
         }
     }
 
-    private void verifyInvoked(ReportPlugin reportWriter, Concept concept) throws ReportException {
-        verify(reportWriter).beginConcept(concept);
-        verify(reportWriter).setResult(conceptResult);
-        verify(reportWriter).endConcept();
+    private void verifyInvoked(Concept concept, ReportPlugin... reportPlugins) throws ReportException {
+        for (ReportPlugin reportPlugin : reportPlugins) {
+            verify(reportPlugin).beginConcept(concept);
+            verify(reportPlugin).setResult(conceptResult);
+            verify(reportPlugin).endConcept();
+        }
     }
 
-    private void verifyNotInvoked(ReportPlugin reportWriter, Concept concept) throws ReportException {
-        verify(reportWriter, never()).beginConcept(concept);
-        verify(reportWriter, never()).setResult(conceptResult);
-        verify(reportWriter, never()).endConcept();
+    private void verifyNotInvoked(Concept concept, ReportPlugin... reportPlugins) throws ReportException {
+        for (ReportPlugin reportPlugin : reportPlugins) {
+            verify(reportPlugin, never()).beginConcept(concept);
+            verify(reportPlugin, never()).setResult(conceptResult);
+            verify(reportPlugin, never()).endConcept();
+        }
     }
 
-    private void verifyInvoked(ReportPlugin reportWriter, Constraint constraint) throws ReportException {
-        verify(reportWriter).beginConstraint(constraint);
-        verify(reportWriter).setResult(constraintResult);
-        verify(reportWriter).endConstraint();
+    private void verifyInvoked(Constraint constraint, ReportPlugin... reportPlugins) throws ReportException {
+        for (ReportPlugin reportPlugin : reportPlugins) {
+            verify(reportPlugin).beginConstraint(constraint);
+            verify(reportPlugin).setResult(constraintResult);
+            verify(reportPlugin).endConstraint();
+        }
     }
 
-    private void verifyNotInvoked(ReportPlugin reportWriter, Constraint constraint) throws ReportException {
-        verify(reportWriter, never()).beginConstraint(constraint);
-        verify(reportWriter, never()).setResult(constraintResult);
-        verify(reportWriter, never()).endConstraint();
+    private void verifyNotInvoked(Constraint constraint, ReportPlugin... reportPlugins) throws ReportException {
+        for (ReportPlugin reportPlugin : reportPlugins) {
+            verify(reportPlugin, never()).beginConstraint(constraint);
+            verify(reportPlugin, never()).setResult(constraintResult);
+            verify(reportPlugin, never()).endConstraint();
+        }
     }
 
     private void write(Concept concept, Constraint constraint) throws ReportException {
@@ -148,7 +169,7 @@ public class CompositeReportPluginTest {
         T rule = mock(type);
         Report report = mock(Report.class);
         if (reportTypes.length > 0) {
-            Set<String> selection = new HashSet<>(Arrays.asList(reportTypes));
+            Set<String> selection = new HashSet<>(asList(reportTypes));
             when(report.getSelectedTypes()).thenReturn(selection);
         } else {
             when(report.getSelectedTypes()).thenReturn(null);
@@ -158,4 +179,68 @@ public class CompositeReportPluginTest {
         return rule;
     }
 
+    @Default
+    private static final class DefaultReportPlugin implements ReportPlugin {
+
+        private final ReportPlugin delegate;
+
+        private DefaultReportPlugin(ReportPlugin delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void initialize() throws ReportException {
+            delegate.initialize();
+        }
+
+        @Override
+        public void configure(ReportContext reportContext, Map<String, Object> properties) throws ReportException {
+            delegate.configure(reportContext, properties);
+        }
+
+        @Override
+        public void begin() throws ReportException {
+            delegate.begin();
+        }
+
+        @Override
+        public void end() throws ReportException {
+            delegate.end();
+        }
+
+        @Override
+        public void beginConcept(Concept concept) throws ReportException {
+            delegate.beginConcept(concept);
+        }
+
+        @Override
+        public void endConcept() throws ReportException {
+            delegate.endConcept();
+        }
+
+        @Override
+        public void beginGroup(Group group) throws ReportException {
+            delegate.beginGroup(group);
+        }
+
+        @Override
+        public void endGroup() throws ReportException {
+            delegate.endGroup();
+        }
+
+        @Override
+        public void beginConstraint(Constraint constraint) throws ReportException {
+            delegate.beginConstraint(constraint);
+        }
+
+        @Override
+        public void endConstraint() throws ReportException {
+            delegate.endConstraint();
+        }
+
+        @Override
+        public void setResult(Result<? extends ExecutableRule> result) throws ReportException {
+            delegate.setResult(result);
+        }
+    }
 }

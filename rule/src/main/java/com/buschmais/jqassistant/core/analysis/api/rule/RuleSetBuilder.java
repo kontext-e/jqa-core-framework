@@ -19,7 +19,6 @@ public class RuleSetBuilder {
 
     public RuleSetBuilder addConcept(Concept concept) throws RuleHandlingException {
         ruleSet.conceptBucket.add(concept);
-
         return this;
     }
 
@@ -68,7 +67,7 @@ public class RuleSetBuilder {
         @Override
         public String toString() {
             return "RuleSet{" + "groups=" + groupsBucket.size() + ", constraints=" + constraintBucket.size() +
-                    ", rules=" + conceptBucket.size() + "}";
+                    ", concepts=" + conceptBucket.size() + "}";
         }
     }
 }

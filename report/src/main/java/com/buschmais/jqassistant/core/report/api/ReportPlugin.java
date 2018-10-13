@@ -1,5 +1,7 @@
 package com.buschmais.jqassistant.core.report.api;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Map;
 
 import com.buschmais.jqassistant.core.analysis.api.Result;
@@ -8,10 +10,22 @@ import com.buschmais.jqassistant.core.analysis.api.rule.Constraint;
 import com.buschmais.jqassistant.core.analysis.api.rule.ExecutableRule;
 import com.buschmais.jqassistant.core.analysis.api.rule.Group;
 
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 /**
  * Defines the interface for report plugins.
  */
 public interface ReportPlugin {
+
+    /**
+     * Marks a {@link ReportPlugin} as default, i.e. it will be executed for every
+     * rule without explicit selection.
+     */
+    @Retention(RUNTIME)
+    @Target(TYPE)
+    @interface Default {
+    }
 
     /*
      * Initializes the plugin.
@@ -20,13 +34,15 @@ public interface ReportPlugin {
 
     /**
      * Initializes the plugin with the given properties.
-     * 
+     *
+     * @param reportContext
+     *            The {@link ReportContext}.
      * @param properties
      *            The properties.
      * @throws ReportException
      *             If the plugin cannot be initialized.
      */
-    void configure(Map<String, Object> properties) throws ReportException;
+    void configure(ReportContext reportContext, Map<String, Object> properties) throws ReportException;
 
     void begin() throws ReportException;
 

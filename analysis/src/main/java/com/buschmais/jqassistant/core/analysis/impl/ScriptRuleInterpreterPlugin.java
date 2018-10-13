@@ -1,30 +1,34 @@
 package com.buschmais.jqassistant.core.analysis.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import com.buschmais.jqassistant.core.analysis.api.AbstractRuleInterpreterPlugin;
 import com.buschmais.jqassistant.core.analysis.api.AnalyzerContext;
 import com.buschmais.jqassistant.core.analysis.api.Result;
-import com.buschmais.jqassistant.core.analysis.api.RuleExecutorPlugin;
+import com.buschmais.jqassistant.core.analysis.api.rule.Executable;
 import com.buschmais.jqassistant.core.analysis.api.rule.ExecutableRule;
 import com.buschmais.jqassistant.core.analysis.api.rule.RuleException;
-import com.buschmais.jqassistant.core.analysis.api.rule.ScriptExecutable;
 import com.buschmais.jqassistant.core.analysis.api.rule.Severity;
+import com.buschmais.jqassistant.core.rule.impl.SourceExecutable;
 
-public class ScriptExecutorPlugin implements RuleExecutorPlugin<ScriptExecutable> {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ScriptRuleInterpreterPlugin extends AbstractRuleInterpreterPlugin {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptRuleInterpreterPlugin.class);
 
     /**
      * Defines the available variables for scripts.
      */
     private enum ScriptVariable {
 
-        STORE, RULE, SEVERITY;
+        @Deprecated STORE, CONTEXT, RULE, SEVERITY;
 
         String getVariableName() {
             return name().toLowerCase();
@@ -32,20 +36,32 @@ public class ScriptExecutorPlugin implements RuleExecutorPlugin<ScriptExecutable
     }
 
     private ScriptEngineManager scriptEngineManager;
+    private Set<String> languages = new TreeSet<>();
 
-    public ScriptExecutorPlugin() {
+    public ScriptRuleInterpreterPlugin() {
         this.scriptEngineManager = new ScriptEngineManager();
+        for (ScriptEngineFactory factory : scriptEngineManager.getEngineFactories()) {
+            for (String name : factory.getNames()) {
+                languages.add(name.toLowerCase());
+            }
+        }
+        LOGGER.debug("Supported languages: {}.", languages);
     }
 
     @Override
-    public Class<ScriptExecutable> getType() {
-        return ScriptExecutable.class;
+    public Collection<String> getLanguages() {
+        return languages;
     }
 
     @Override
-    public <T extends ExecutableRule<ScriptExecutable>> Result<T> execute(T executableRule, Map<String, Object> ruleParameters, Severity severity,
-            AnalyzerContext context) throws RuleException {
-        ScriptExecutable executable = executableRule.getExecutable();
+    public <T extends ExecutableRule<?>> boolean accepts(T executableRule) {
+        return executableRule.getExecutable() instanceof SourceExecutable;
+    }
+
+    @Override
+    public <T extends ExecutableRule<?>> Result<T> execute(T executableRule, Map<String, Object> ruleParameters, Severity severity, AnalyzerContext context)
+            throws RuleException {
+        Executable<String> executable = executableRule.getExecutable();
         String language = executable.getLanguage();
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName(language);
         if (scriptEngine == null) {
@@ -57,6 +73,7 @@ public class ScriptExecutorPlugin implements RuleExecutorPlugin<ScriptExecutable
         }
         // Set default variables
         scriptEngine.put(ScriptVariable.STORE.getVariableName(), context.getStore());
+        scriptEngine.put(ScriptVariable.CONTEXT.getVariableName(), context);
         scriptEngine.put(ScriptVariable.RULE.getVariableName(), executableRule);
         scriptEngine.put(ScriptVariable.SEVERITY.getVariableName(), severity);
         // Set rule parameters

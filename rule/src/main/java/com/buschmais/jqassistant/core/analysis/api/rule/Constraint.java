@@ -1,21 +1,10 @@
 package com.buschmais.jqassistant.core.analysis.api.rule;
 
+import lombok.experimental.SuperBuilder;
+
 /**
  * Defines a constraint to be validated.
  */
+@SuperBuilder
 public class Constraint extends AbstractExecutableRule {
-
-    protected Constraint() {
-    }
-
-    public static class Builder extends AbstractExecutableRule.Builder<Constraint.Builder, Constraint> {
-
-        protected Builder(Constraint rule) {
-            super(rule);
-        }
-
-        public static Builder newConstraint() {
-            return new Builder(new Constraint());
-        }
-    }
 }

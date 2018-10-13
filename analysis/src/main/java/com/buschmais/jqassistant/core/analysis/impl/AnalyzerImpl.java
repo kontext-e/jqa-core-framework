@@ -1,9 +1,11 @@
 package com.buschmais.jqassistant.core.analysis.impl;
 
+import java.util.Collection;
 import java.util.Map;
 
 import com.buschmais.jqassistant.core.analysis.api.Analyzer;
 import com.buschmais.jqassistant.core.analysis.api.AnalyzerConfiguration;
+import com.buschmais.jqassistant.core.analysis.api.RuleInterpreterPlugin;
 import com.buschmais.jqassistant.core.analysis.api.rule.RuleException;
 import com.buschmais.jqassistant.core.analysis.api.rule.RuleSelection;
 import com.buschmais.jqassistant.core.analysis.api.rule.RuleSet;
@@ -18,13 +20,14 @@ import org.slf4j.Logger;
  */
 public class AnalyzerImpl implements Analyzer {
 
-    private AnalyzerConfiguration configuration;
+    private final AnalyzerConfiguration configuration;
 
-    private Store store;
+    private final Store store;
 
-    private ReportPlugin reportPlugin;
+    private final Map<String, Collection<RuleInterpreterPlugin>> ruleInterpreterPlugins;
+    private final ReportPlugin reportPlugin;
 
-    private Logger logger;
+    private final Logger logger;
 
     /**
      * Constructor.
@@ -33,14 +36,18 @@ public class AnalyzerImpl implements Analyzer {
      *            The configuration.
      * @param store
      *            The store
+     * @param ruleInterpreterPlugins
+     *            The {@link RuleInterpreterPlugin}s.
      * @param reportPlugin
      *            The report wrtier.
      * @param log
-     *            The logger.
+     *            The {@link Logger}.
      */
-    public AnalyzerImpl(AnalyzerConfiguration configuration, Store store, ReportPlugin reportPlugin, Logger log) {
+    public AnalyzerImpl(AnalyzerConfiguration configuration, Store store, Map<String, Collection<RuleInterpreterPlugin>> ruleInterpreterPlugins,
+            ReportPlugin reportPlugin, Logger log) {
         this.configuration = configuration;
         this.store = store;
+        this.ruleInterpreterPlugins = ruleInterpreterPlugins;
         this.reportPlugin = reportPlugin;
         this.logger = log;
     }
@@ -49,7 +56,7 @@ public class AnalyzerImpl implements Analyzer {
     public void execute(RuleSet ruleSet, RuleSelection ruleSelection, Map<String, String> ruleParameters) throws RuleException {
         reportPlugin.begin();
         try {
-            AnalyzerVisitor visitor = new AnalyzerVisitor(configuration, ruleParameters, store, reportPlugin, logger);
+            AnalyzerVisitor visitor = new AnalyzerVisitor(configuration, ruleParameters, store, ruleInterpreterPlugins, reportPlugin, logger);
             RuleSetExecutor executor = new RuleSetExecutor(visitor, configuration.getRuleSetExecutorConfiguration());
             executor.execute(ruleSet, ruleSelection);
         } finally {

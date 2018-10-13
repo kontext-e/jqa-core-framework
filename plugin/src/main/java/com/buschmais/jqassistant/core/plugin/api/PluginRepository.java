@@ -5,15 +5,19 @@ package com.buschmais.jqassistant.core.plugin.api;
  */
 public interface PluginRepository {
 
-    ModelPluginRepository getModelPluginRepository() throws PluginRepositoryException;
+    ModelPluginRepository getModelPluginRepository();
 
-    ScannerPluginRepository getScannerPluginRepository() throws PluginRepositoryException;
+    ScannerPluginRepository getScannerPluginRepository();
 
-    ScopePluginRepository getScopePluginRepository() throws PluginRepositoryException;
+    ScopePluginRepository getScopePluginRepository();
 
-    RulePluginRepository getRulePluginRepository() throws PluginRepositoryException;
+    RulePluginRepository getRulePluginRepository();
 
-    ReportPluginRepository getReportPluginRepository() throws PluginRepositoryException;
+    RuleInterpreterPluginRepository getRuleInterpreterPluginRepository();
+
+    RuleParserPluginRepository getRuleParserPluginRepository();
+
+    ReportPluginRepository getReportPluginRepository();
 
     ClassLoader getClassLoader();
 }

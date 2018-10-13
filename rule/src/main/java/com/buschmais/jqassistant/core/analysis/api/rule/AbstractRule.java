@@ -2,9 +2,12 @@ package com.buschmais.jqassistant.core.analysis.api.rule;
 
 import com.buschmais.jqassistant.core.rule.api.source.RuleSource;
 
+import lombok.experimental.SuperBuilder;
+
 /**
  * Abstract base class for rules.
  */
+@SuperBuilder
 public abstract class AbstractRule implements Rule {
 
     /**
@@ -59,7 +62,7 @@ public abstract class AbstractRule implements Rule {
 
         AbstractRule that = (AbstractRule) o;
 
-        return id.equals(that.id);
+        return this.getClass().equals(that.getClass()) && id.equals(that.id);
     }
 
     @Override
@@ -80,7 +83,7 @@ public abstract class AbstractRule implements Rule {
             this.rule = rule;
         }
 
-        public R get() {
+        public R build() {
             return (R) rule;
         }
 

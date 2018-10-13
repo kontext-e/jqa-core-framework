@@ -3,12 +3,10 @@ package com.buschmais.jqassistant.core.store.impl;
 import java.util.Properties;
 
 import com.buschmais.jqassistant.core.store.api.StoreConfiguration;
-import com.buschmais.xo.api.XOManager;
+import com.buschmais.xo.api.XOManagerFactory;
 import com.buschmais.xo.api.bootstrap.XOUnit;
 import com.buschmais.xo.neo4j.remote.api.RemoteNeo4jXOProvider;
 import com.buschmais.xo.neo4j.remote.api.RemoteNeo4jXOProvider.Property;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 
 public class RemoteGraphStore extends AbstractGraphStore {
 
@@ -17,35 +15,35 @@ public class RemoteGraphStore extends AbstractGraphStore {
     }
 
     @Override
-    protected GraphDatabaseService getGraphDatabaseService(XOManager xoManager) {
-        throw new IllegalStateException("Not Supported.");
-    }
-
-    @Override
     protected int getAutocommitThreshold() {
         return 2048;
     }
 
     @Override
-    protected void configure(XOUnit.XOUnitBuilder builder) {
+    protected XOUnit configure(XOUnit.XOUnitBuilder builder, StoreConfiguration storeConfiguration) {
         builder.provider(RemoteNeo4jXOProvider.class);
         Properties properties = new Properties();
-        String username = storeConfiguration.getUsername();
+        String username = this.storeConfiguration.getUsername();
         if (username != null) {
             properties.setProperty(Property.USERNAME.getKey(), username);
         }
-        String password = storeConfiguration.getPassword();
+        String password = this.storeConfiguration.getPassword();
         if (password != null) {
             properties.setProperty(Property.PASSWORD.getKey(), password);
         }
-        String encryptionLevel = storeConfiguration.getEncryptionLevel();
+        String encryptionLevel = this.storeConfiguration.getEncryptionLevel();
         if (encryptionLevel != null) {
             properties.setProperty(Property.ENCRYPTION_LEVEL.getKey(), encryptionLevel);
         }
-        Properties storeConfigurationProperties = storeConfiguration.getProperties();
+        Properties storeConfigurationProperties = this.storeConfiguration.getProperties();
         if (storeConfigurationProperties != null) {
             properties.putAll(storeConfigurationProperties);
         }
         builder.properties(properties);
+        return builder.build();
+    }
+
+    @Override
+    protected void initialize(XOManagerFactory xoManagerFactory) {
     }
 }

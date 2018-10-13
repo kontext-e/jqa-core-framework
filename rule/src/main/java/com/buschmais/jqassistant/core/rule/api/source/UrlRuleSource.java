@@ -16,17 +16,13 @@ public class UrlRuleSource extends RuleSource {
     }
 
     @Override
-    protected Type getType() {
-        Type type = selectTypeById();
-        if (type == null) {
-            type = Type.XML;
-        }
-        return type;
+    public String getId() {
+        return url.toExternalForm();
     }
 
     @Override
-    public String getId() {
-        return url.toExternalForm();
+    public URL getURL() {
+        return this.url;
     }
 
     @Override
